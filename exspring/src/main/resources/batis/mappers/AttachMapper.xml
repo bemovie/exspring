@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <!-- 이 파일이 담고있는 SQL문들 집합의 고유한 이름을 namespace 속성값으로 설정 -->
+ <!-- 일반적으로 이 SQL문들을 실행할 때 사용할 DAO인터페이스 이름을 지정 -->
+<mapper namespace="com.exam.myapp.bbs.AttachDao">
+
+	<select id="selectAttachList" resultType="AttachVo">
+		SELECT att_no, att_org_name, att_new_name, att_bbs_no
+    	FROM attach
+    	WHERE att_bbs_no = #{bbsNo} <!-- 게시글 번호를 주면, 게시글에 해당하는 첨부파일 목록을 가져옴 -->
+	</select>
+	
+	<select id="selectAttach" resultType="AttachVo"> <!-- BbsVo에 담음 -->
+    	SELECT att_no, att_org_name, att_new_name, att_bbs_no
+    	FROM attach
+    	WHERE att_no = #{attNo} <!-- #{value} --> <!-- 정수 하나를 전달하기 때문에, 여기에 뭐를 쓰더라도 단일 값이 전달된다 -->
+	</select>
+	
+	<!--  SQL문 실행시 전달받는 데이터의 타입을 parameterType 속성에 지정 가능(생략도 가능)  --> 
+	 <insert id="insertAttach"> <!-- parameterType="MemberVo" -->
+	 	INSERT INTO attach (att_no, att_org_name, att_new_name, att_bbs_no)
+		VALUES ( att_seq.NEXTVAL, #{attOrgName}, #{attNewName}, #{attBbsNo} )
+	 </insert>
+	 
+	 <delete id="deleteAttach"> <!-- parameterType="string" -->	 
+	 	DELETE FROM attach WHERE att_no = #{attNo}
+	 </delete>
+	 
+	 <!-- <delete id="deleteBbs"> parameterType="string"	 
+	 	DELETE FROM bbs WHERE bbs_no = #{bbsNo}
+	 </delete> -->
+  
+  	<!-- <update id="updateBbs"> parameterType="BbsVo"
+  		UPDATE bbs
+  		SET bbs_title = #{bbsTitle}, bbs_content = #{bbsContent}
+  		WHERE bbs_no = #{bbsNo}
+  	</update> -->
+  
+</mapper>

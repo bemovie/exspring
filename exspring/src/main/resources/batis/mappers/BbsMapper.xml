@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ <!-- 이 파일이 담고있는 SQL문들 집합의 고유한 이름을 namespace 속성값으로 설정 -->
+ <!-- 일반적으로 이 SQL문들을 실행할 때 사용할 DAO인터페이스 이름을 지정 -->
+<mapper namespace="com.exam.myapp.bbs.BbsDao">
+	<resultMap type="BbsVo" id="BbsMap"> <!-- BbsVo 객체에다가 어떻게 컬럼값을 담아야 할지 설정 -->
+		<id property="bbsNo" column="bbs_no" />
+		<result property="bbsTitle" column="bbs_title" />
+		<result property="bbsContent" column="bbs_content" />
+		<result property="bbsWriter" column="bbs_writer" />
+		<result property="bbsRegDate" column="bbs_reg_date" />
+		<result property="bbsCount" column="bbs_count" />
+		<!-- <result property="attachList" column="attachList" /> -->
+		<!-- JOIN 조회결과를 담기 위한 resultMap 설정 -->
+		<!-- 1:1 관계이면 associtation 엘리먼트를, 1:N 관계이면 collection 엘리먼트를 사용 -->
+		<collection property="attachList" ofType="AttachVo">
+			<id property="attNo" column="att_no" />
+			<result property="attOrgName" column="att_org_name" />
+			<result property="attNewName" column="att_new_name" />
+			<result property="attBbsNo" column="att_bbs_no" />
+		</collection>
+		
+		<!-- bbs_no 컬럼값을 파라미터로 전달하면서, -->
+		<!-- 이름이 "com.exam.myapp.bbs.AttachDao.selectAttachList"인 SQL문을 실행하고, -->
+		<!-- 그 결과를 attachList 속성값으로 저장 -->
+		<!-- <collection property="attachList" ofType="AttachVo" column="bbs_no"
+			select="com.exam.myapp.bbs.AttachDao.selectAttachList"/> -->
+		
+		<!-- <result property="bbsFile" column="bbsFile" /> --> <!-- 첨부파일 받으려는 변수니까 필요x -->
+	</resultMap>
+
+	<sql id="searchCondition">
+	<!-- trim 태그 내부에 내용이 있을 경우에만, 내용 앞에 prefix 속성값을 추가 -->
+		<!-- 내용의 시작 부분이 prefixOverrides 속성값인 경우 그 부분을 내용에서 제거 -->
+		<trim prefix="WHERE" prefixOverrides="AND |OR " >
+			<if test="(searchType == 'title' or searchType == 'total') and searchWord!=null and searchWord!=''">
+				bbs_title LIKE '%' || #{searchWord} || '%'
+			</if>
+			<if test="(searchType == 'content' or searchType == 'total') and searchWord!=null and searchWord!=''">
+				OR bbs_content LIKE '%' || #{searchWord} || '%'
+			</if>
+		</trim>
+		<!-- <if test="searchType == 'total'">
+			WHERE bbs_title LIKE '%' || #{searchWord} || '%'
+			OR bbs_content LIKE '%' || #{searchWord} || '%'
+		</if> -->
+	</sql>
+
+	<select id="selectBbsCount" resultType="int">
+		SELECT count(*)
+		FROM bbs
+		<include refid="searchCondition"></include>
+	</select>
+	
+	<select id="selectBbsList" resultType="BbsVo">
+		SELECT rnum, bbs_no, bbs_title, bbs_writer, bbs_reg_date, bbs_count
+		FROM (
+		  SELECT ROWNUM rnum, bbs_no, bbs_title, bbs_writer, bbs_reg_date, bbs_count
+		  FROM (
+		   SELECT bbs_no, bbs_title, bbs_writer, bbs_reg_date, bbs_count
+			FROM bbs
+			<include refid="searchCondition"></include>
+			ORDER BY bbs_reg_date DESC, bbs_no DESC
+		  )
+		  <![CDATA[	WHERE ROWNUM <= #{lastRecordIndex}	]]> 
+		)
+		<![CDATA[	WHERE #{firstRecordIndex} < rnum	]]> 	
+	</select>
+	
+	<select id="selectBbs" resultMap="BbsMap"> <!-- BbsVo에 담음 -->
+    	SELECT bbs_no, bbs_title, bbs_content, bbs_writer, bbs_reg_date, bbs_count
+  		, att_no, att_org_name, att_new_name, att_bbs_no
+		FROM ( 
+		SELECT bbs_no, bbs_title, bbs_content, bbs_writer, bbs_reg_date, bbs_count 
+		FROM bbs 
+		WHERE bbs_no = #{bbsNo}
+		) bbs 
+		LEFT OUTER JOIN attach ON bbs.BBS_NO = attach.ATT_BBS_NO
+		<!-- WHERE bbs_no = #{bbsNo} --> <!-- #{value} --> <!-- 정수 하나를 전달하기 때문에, 여기에 뭐를 쓰더라도 단일 값이 전달된다 -->
+		
+		<!-- SELECT bbs_no, bbs_title, bbs_content, bbs_writer, bbs_reg_date, bbs_count 
+		FROM bbs 
+		WHERE bbs_no = #{bbsNo} -->
+	</select>
+	
+	<!--  SQL문 실행시 전달받는 데이터의 타입을 parameterType 속성에 지정 가능(생략도 가능)  --> 
+	 <insert id="insertBbs"> <!-- parameterType="MemberVo" -->
+	 	<selectKey keyProperty="bbsNo" resultType="int" order="BEFORE">
+	 		SELECT bbs_seq.NEXTVAL FROM DUAL <!-- insert할 때, 시퀀스 값을 구하는게 아니라 그 전에 select를 통해서 시퀀스 값을 구함 -->
+	 	</selectKey>
+	 	INSERT INTO bbs (bbs_no, bbs_title, bbs_content, bbs_writer)
+		VALUES ( #{bbsNo}, #{bbsTitle}, #{bbsContent}, #{bbsWriter} )
+	 </insert>
+	 
+	 <delete id="deleteBbs"> <!-- parameterType="string" -->	 
+	 	DELETE FROM bbs WHERE bbs_no = #{bbsNo}
+	 </delete>
+  
+  	<update id="updateBbs"> <!-- parameterType="BbsVo" -->
+  		UPDATE bbs
+  		SET bbs_title = #{bbsTitle}, bbs_content = #{bbsContent}
+  		WHERE bbs_no = #{bbsNo} and bbs_writer = #{bbsWriter}
+  	</update>
+  
+</mapper>
