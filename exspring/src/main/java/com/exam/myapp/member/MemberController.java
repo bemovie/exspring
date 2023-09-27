@@ -17,10 +17,14 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -51,27 +55,49 @@ public class MemberController {
 	}
 	
 	@RequestMapping(value = "/member/add.do", method = RequestMethod.GET)
-	public String addform() {
+	public String addform(MemberVo vo) {
 //		req.getRequestDispatcher("/WEB-INF/views/member/memAdd.jsp").forward(req, resp);
 		return "member/memAdd";
 	}
 	
+	//스프링에 등록된 표준BeanValidator를 사용하여
+	//저장된 값을 검증하고 싶은 객체 매개변수 앞에 @Valid 적용
+	//@Valid 매개변수 다음 위치에 검증결과를 저장하기 위한
+	//BindingResult 또는 Errors 타입의 매개변수를 추가
 	@RequestMapping(value = "/member/add.do", method = RequestMethod.POST)
-	public String add(MemberVo vo) {
-
-//	req.setCharacterEncoding("UTF-8"); //필터로 이동
-//	MemberVo vo = new MemberVo();
-//	vo.setMemId(req.getParameter("memId"));
-//	vo.setMemPass(req.getParameter("memPass"));
-//	vo.setMemName(req.getParameter("memName"));
-//	vo.setMemPoint(Integer.parseInt(req.getParameter("memPoint")));
+	public String add(@Valid /*@ModelAttribute("mv")*/ MemberVo vo, BindingResult result) {
+		
+		System.out.println(result.getAllErrors());
+		
+		if (result.hasErrors()) { //검증결과 오류가 있다면
+////			List<FieldError> fieldErrors = result.getFieldErrors();
+//			for	(FieldError fe : result.getFieldErrors()) {
+//				System.out.println("** " + fe.getField() );
+////				String[] codes = fe.getCodes();
+//				for (String c : fe.getCodes()) {
+//					System.out.println(c);
+//				}
+//			}
+			return "member/memAdd"; //회원정보 입력 화면(JSP) 출력(실행)
+		}
+		
+//		if (vo.getMemId().length() <=5 ) {
+//			return "member/memAdd";
+//		}
 	
-	int n = memberService.insertMember(vo);
-	
-	System.out.println(n + "명의 회원 추가");
-	
-//	resp.sendRedirect(req.getContextPath() + "/member/list.do");
-	return "redirect:/member/list.do";
+	//	req.setCharacterEncoding("UTF-8"); //필터로 이동
+	//	MemberVo vo = new MemberVo();
+	//	vo.setMemId(req.getParameter("memId"));
+	//	vo.setMemPass(req.getParameter("memPass"));
+	//	vo.setMemName(req.getParameter("memName"));
+	//	vo.setMemPoint(Integer.parseInt(req.getParameter("memPoint")));
+		
+		int n = memberService.insertMember(vo);
+		
+		System.out.println(n + "명의 회원 추가");
+		
+	//	resp.sendRedirect(req.getContextPath() + "/member/list.do");
+		return "redirect:/member/list.do";
 
 	}
 	
