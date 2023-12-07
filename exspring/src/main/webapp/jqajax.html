@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>AJAX</title>
+<!-- base 요소를 사용하여, 현재 문서 내의 모든 상대경로의 공통적인 부분을 설정 가능 -->
+<base href="/myapp/"> <!-- 공통경로를 지정 --> <!-- target="" :  링크들의기본 속성값 지정 -->
+<!-- <script src="/myapp/resources/js/jquery-3.7.0.min.js"></script> --> <!-- contextpath를 쓸수가 없어서 수동으로 /myapp 입력 -->
+<script src="resources/js/jquery-3.7.0.min.js"></script>
+</head>
+<body>
+	<h1>AJAX TEST</h1>
+	<form action="" id="myform">
+		x : <input type="number" name="x" value="3">
+		y : <input type="number" name="y" value="6">
+		<input type="button" value="전송" id="send">
+		<input type="button" value="전송2" id="send2">
+	</form>
+	<h1 id="result"></h1>
+	<script type="text/javascript">
+		let mf = $('#myform');
+		let resElm = $('#result');
+		let xInp = $('[name="x"]');
+		let yInp = $('[name="y"]');
+		$('#send').on('click', function() {
+			$.ajax({ //어떻게 요청 보낼지, 주소와 방식을 객체에 담아 전달
+				//url: '/myapp/cal', //요청주소
+				url: 'cal', //요청주소
+				method: 'POST', //요청방식
+				headers: {'Accept':'application/json'}, //{ 헤더명:헤더값, 헤더명:헤더값 }, //요청헤더
+						//Accept : 요청에 대한 응답으로 ~(application/json)으로 받고 싶다,
+				//data: 'x='+ xInp.val() +'&y='+ yInp.val() //요청메시지내용(요청파라미터) //POST면, body에 담아서 전송, GET이면 주소 뒤에 붙여서 전송,
+				//data: { x: xInp.val(), y: yInp.val() } //요청메시지내용(요청파라미터) //객체 형태로 전송, 특수문자가 있어도 자동으로 인코딩해준다,
+				data: mf.serialize() //요청메시지내용(요청파라미터) //serialize : 안에 있는 입력요소 값들을 전부 이름=값으로 문자열 요소로 만들어준다, 수십개, 수백개가 있어도 가능
+				//,dataType: 'text' //응답내용의 타입
+				,dataType: 'json' //응답내용의 타입
+			})
+			//.done(함수) //성공하면 실행
+			.done(function(data,status,xhr) { //성공적으로 응답을 받았을 때 실행, //data : 응답 메세지 내용, status : 상태 문자열, jqxhr : 내부적으로 사용했던 xhr을 담고 있는 요청 객체
+				console.log('성공', data);
+				//console.log( JSON.parse(data) );
+				console.log(xhr.status); //응답상태코드 : 200, 404, 500
+				console.log(xhr.getResponseHeader('Content-Type')); //응답헤더값
+				//let data = xhr.response; 
+				resElm.html( data.sum +','+ data.mul );
+			}) //성공하면 실행
+			//.fail(함수) //실패하면 실행
+			.fail(function() { //요청에 대한 응답을 받지 못하고 실패한 경우 실행,
+				console.log('실패');	
+			}) //실패하면 실행
+			//.always(함수); //성공이든 실패든 끝나면 실행
+			.always(function() { //성공 또는 실패에 관계없이 요청 처리가 끝난 경우 실행,
+				console.log('종료');	
+			}); //성공이든 실패든 끝나면 실행
+		});
+			
+			
+		$('#send2').on('click', function() {
+			$.ajax({ //어떻게 요청 보낼지, 주소와 방식을 객체에 담아 전달
+				//url: '/myapp/cal', //요청주소
+				url: 'cal', //요청주소
+				method: 'GET', //요청방식
+				data: { x: xInp.val(), y: yInp.val() } //요청메시지내용(요청파라미터) //객체 형태로 전송, 특수문자가 있어도 자동으로 인코딩해준다,
+				,dataType: 'json' //응답내용의 타입
+			})
+			.done(function(data,status,xhr) { //성공적으로 응답을 받았을 때 실행, //data : 응답 메세지 내용, status : 상태 문자열, jqxhr : 내부적으로 사용했던 xhr을 담고 있는 요청 객체
+				resElm.html( data.sum +','+ data.mul );
+			}) //성공하면 실행
+			.fail(function() { //요청에 대한 응답을 받지 못하고 실패한 경우 실행,
+				console.log('실패');	
+			}); //실패하면 실행
+		});
+			
+			
+			/*
+			let xhr = new XMLHttpRequest(); //AJAX 요청 전송 및 응답수신을 담당하는 객체
+			xhr.responseType = 'json'; //'text', 'json', 'document', 'blob', 'arraybuffer' 사용 가능
+			//json으로 올거라고 설정을 해놓으면, 응답 오는 객체를 json 형태로 바꿔서 저장해놓음,
+			xhr.onload = function() { //성공적으로 응답을 받았을 때 실행,
+				console.log(xhr.status); //응답상태코드 : 200, 404, 500
+				console.log(xhr.getResponseHeader('Content-Type')); //응답헤더값
+				let data = xhr.response; 
+				resElm.innerHTML = data.sum +','+ data.mul;
+			};
+			xhr.onerror = function() { //요청에 대한 응답을 받지 못하고 실패한 경우 실행,
+				console.log('실패');	
+			};
+			xhr.onloadend = function() { //성공 또는 실패에 관계없이 요청 처리가 끝난 경우 실행,
+				console.log('종료');	
+			};
+			xhr.open( 'POST','/myapp/cal' ); //요청 방식과 주소 설정
+			xhr.setRequestHeader('Accept','application/json') //요청헤더 값 설정
+			xhr.send( new FormData(mf) ); //요청전송 (메시지본문에 담아서 전송할 데이터를 인자로 전달)
+			*/
+			
+		//});
+		
+		
+		/*
+		//~ fetch api 방식 ~
+		document.querySelector('#send2').onclick = function() {
+			fetch('/myapp/cal', {
+				method: 'POST',
+				//body: new URLSearchParams({x: xInp.value, y: yInp.value})
+				body: new FormData(mf)
+			}).then(function(response) {
+				//let data = response.json();
+				return response.json();
+			}).then(function(data){ //response.json()의 결과가 인자로 전달
+				resElm.innerHTML = data.sum +','+ data.mul;
+			}).catch(function(error){
+				console.log(error);
+				//alert(error);
+			});
+			
+			
+			
+			fetch('요청주소', { 
+				method: '요청방식',
+				headers: { '요청헤더명':'요청헤더값', '요청헤더명':'요청헤더값' }	, 
+				body: 요청메시지 본문에 담아서 전송할 데이터(문자열,URLSearchParams,FormData사용가능) //send에 들어갈 인자
+			}).then(function(response) { //성공적으로 응답을 받은 경우 실행
+				console.log(response.status); //응답상태코드
+				console.log(response.ok); //응답상태코드가 200~299인지 여부 (성공적으로 응답을 받았다 볼 수 있음)
+				console.log(response.headers.get('응답헤더명')); //응답헤더값
+				console.log(response.body); //응답내용(본문)을 읽을 수 있는 스트림, 텍스트로 되어 있는 게 아니라 readable stream이라는 스트림으로 되어 있어 읽기 힘듬 
+				//응답내용을 다양한 타입으로 변환해주는 메서드 존재
+				//xhr.responseType에 대응,
+				response.text() //응답내용을 문자열로 변환
+				response.json() //응답내용을 JSON문자열로 해석하여 자바스크립트객체로 변환 //주로 사용
+				response.blob() //응답내용을 Blob 객체로 변환 //파일 다운로드
+				response.arrayBuffer() //응답내용을 ArrayBuffer 객체로 변환
+				response.formData() //응답내용을 FormData 객체로 변환 //응답객체가 파라미터나 multi-part 형태로 와야 함,
+			}).catch(function(error){ //실패했을 때 실행
+				
+			}).finally(function(error){ //성공이든 실패든 요청처리가 종료된 후 실행
+				
+			});
+			
+			
+		};
+		*/
+		
+	
+	</script>
+</body>
+</html>

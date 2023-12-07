@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원관리</title>
+    <base href="/myapp/">
+    <style>
+        table {
+            border-collapse: collapse; /* 선이 겹치면 하나만 */
+            border-spacing: 0px; /* 테두리 간격 없음 */
+        }
+        th, td {
+            border: 1px solid black;
+        }
+        form:not(.active) { /* form에 active 속성이 없으면 안 보이게, display나 visuablity로 부여 */
+            display: none;
+        }
+        form {
+            position: fixed;
+            left: 50%;
+            top: 10%;
+            border: 2px solid black;
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        /* .mod .mod-hide { */ /* mod 클래스 가진 얘의 자식 중에서 mod-hide를 가진 얘 */
+        /* form.mod .mod-hide { */ 
+        #stuForm.mod .mod-hide {
+        	display: none; /* 자리도 차지 안함 */
+        	/* visibility: hidden; */ /* 자리는 차지, 공간은 남아있음 */
+        }
+        
+    </style>
+    <script src="resources/js/jquery-3.7.0.min.js"></script>
+    <script>
+     //let studentList = []; //회원 정보로 사용, db서버에서 받아와서 사용
+     //studentList.push({ stuNo: '20230001', stuName: '고길동', stuScore: 70 });
+     //studentList.push({ stuNo: '20230002', stuName: '마이콜', stuScore: 30 });
+     //studentList.push({ stuNo: '20230003', stuName: '도우너', stuScore: 50 });
+
+     //1.studentList 의 학생정보를 stuTable에 출력
+     
+     
+     //	삭제버튼을 클릭하면,
+     //	데이터베이스에서 해당 회원을 삭제하고, 변경된 회원목록을 화면에 출력하도록 구현
+     //	삭제 성공 또는 실패시 alert 메시지를 출력하도록 구현
+     
+
+     $(function() { //window에 걸어도 된다, event 객체를 인자(변수)로 받으려면, function(ev) 해주고, 아니면 생략
+
+         let delBtn = $('#del'); //jQuery 객체를 만들어서, 그 안에 element 객체가 담겨져 있다
+         let saveBtn = $('#save');
+         let noInp = $('[name="memId"]');
+         let passInp = $('[name="memPass"]');
+         let nameInp = $('[name="memName"]');
+         let scoreInp = $('[name="memPoint"]');
+         let sf = $('#stuForm');
+         let tb = $('#stuTable > tbody'); //직속 자식인 경우
+         //let rowTemp = $( $('#row').prop('content') );
+         let rowTemp = $(document.querySelector('#row').content); //jQuery 객체를 또 만들 필요없이, content 속성을 찾고, 그걸 jQuery 객체로 만드는게 효율 좋다,
+         
+         function refreshList() {
+        	$.ajax('/myapp/api/member/list', {
+ 				method: 'GET',
+ 				dataType: 'json'
+         		//.then(response=>response.json())
+        	})
+        	.done(function(data){ //response.json()의 결과가 인자로 전달
+        		console.log(data);
+ 				tb.empty(); //tb.html('');
+ 				let dfrag = [];
+ 				//let dfrag = document.createDocumentFragment();
+                 for (let i = 0; i < data.length; i++) {
+                      const s = data[i];
+                      let r = rowTemp.clone(); //템플릿 내용을 복제
+                      r.find('.no').text(s.memId); //$('.no',r).html(s.memId); //성능 상으로는 tag를 인식 안 하는 textContent가 좀 더 빠름,
+                      r.find('.name').text(s.memName); //$('.name',r).html(s.memName);
+                      r.find('.score').text(s.memPoint); //$('.score',r).html(s.memPoint);
+                      r.find('.edit').data('no', s.memId); //$('.edit',r).attr('data-no', s.memId);
+                      dfrag.push(r);
+                 }
+                 //tb.emptry(); //여기서 해도 됨,
+                 tb.append(dfrag); //tb의 내용에 추가
+        	}).fail(function(jqXHR,textStatus,error){
+ 				console.log(error);
+				alert('회원목록 조회 실패');
+			});
+         }
+        	 
+        	/*
+        	//db에서 회원 목록 받기 위한 요청 
+        	$.ajax({
+         		url: 'api/member/list',
+         		method: 'GET',
+         		dataType: 'json'
+         	})
+         	.done(function(data) {
+				console.log(data);
+				console.log(data[0].memId);
+				//tb.html('');
+				tb.empty();
+				//let dfrag = document.createDocumentFragment();
+                for (let i = 0; i < data.length; i++) {
+                     const s = data[i];
+                     let r = rowTemp.clone(); //템플릿 내용을 복제
+                     r.find('.no').text(s.memId); //성능 상으로는 tag를 인식 안 하는 textContent가 좀 더 빠름,
+                     r.find('.name').text(s.memName);
+                     r.find('.score').text(s.memPoint);
+                     r.find('.edit').data('no', s.memId);
+                     
+                     //dfrag.append(r); //문서 조각에 담음,
+                     tb.append(r);
+                 }
+                 //tb.append(dfrag);
+			})
+         	.fail(function() { //요청에 대한 응답을 받지 못하고 실패한 경우 실행,
+				console.log('실패');	
+			});
+     
+         };
+         */
+         
+         refreshList();
+         initForm();
+          	
+				/* 
+            	//db에서 회원 목록 받기 위한 요청
+                fetch('/myapp/api/member/list', {
+    				method: 'GET',
+    				//body: new URLSearchParams({x: xInp.value, y: yInp.value})
+    				//body: new FormData(mf)
+    			}).then(response=>response.json())
+    			.then(function(data){ //response.json()의 결과가 인자로 전달
+    				console.log(data);
+    				//let studentList = data;
+    				
+    				
+    				
+    				tb.innerHTML = ''; //tbody 내용 초기화
+
+                    //let htmlStr = '';
+                    //let elmArr = [];
+                    let dfrag = document.createDocumentFragment(); //dom tree처럼, element 객체를 담는 얘, jQuery 객체는 못담음,
+                    for (let i = 0; i < data.length; i++) {
+                        const s = data[i];
+                        //htmlStr += '<tr><td>' + studentList[i].stuNo + '</td><td>' + studentList[i].stuName + '</td><td>' + studentList[i].stuScore + '</td><td><button type="button">변경</button></td></tr>';    
+                        //htmlStr += '<tr><td>' + s.stuNo + '</td><td>' + s.stuName + '</td><td>' + s.stuScore + '</td><td><button type="button">변경</button></td></tr>';    
+                        
+                        //htmlStr += `<tr><td>${s.stuNo}</td><td>${s.stuName}</td><td>${s.stuScore}</td><td><button type="button">변경</button></td></tr>`;    
+                        
+
+                        // let tr = document.createElement('tr'); //<tr></tr>
+                        // let td1 = document.createElement('td'); //<td></td>
+                        // td1.textContent = s.stuNo; //<td>s.stuNo</td>
+                        // tr.append(td1); //<tr><td>s.stuNo</td></tr>
+                        // let td2 = document.createElement('td'); //<td></td>
+                        // td2.textContent = s.stuName; //<td>s.stuName</td>
+                        // tr.append(td2); //<tr><td>s.stuName</td></tr>
+                        // let td3 = document.createElement('td'); //<td></td>
+                        // td3.textContent = s.stuScore; //<td>s.stuScore</td>
+                        // tr.append(td3); //<tr><td>s.stuScore</td></tr>
+                        // let td4 = document.createElement('td'); //<td></td>
+                        // let btn = document.createElement('button'); //<button></button>
+                        // btn.type='button'; //<button type="button"></button>
+                        // btn.textContent = '변경'; //<button type="button">변경</button type="button">
+                        // td4.append(btn); //<td><button type="button">변경</button type="button"></td>
+                        // tr.append(td4); //<tr><td><button type="button">변경</button type="button"></td></tr>
+                        // tb.append(tr);
+
+
+                        let r = rowTemp.content.cloneNode(true); //템플릿 내용을 복제
+                        //r.querySelectorAll('td')[0].innerHTML = s.stuNo; //성능 상으로는 tag를 인식 안 하는 textContent가 좀 더 빠름,
+                        //r.querySelectorAll('td')[1].innerHTML = s.stuName;
+                        //r.querySelectorAll('td')[2].innerHTML = s.stuScore;
+
+                        //r.querySelector('td.no').innerHTML = s.stuNo; //성능 상으로는 tag를 인식 안 하는 textContent가 좀 더 빠름,
+                        //r.querySelector('td.name').innerHTML = s.stuName;
+                        //r.querySelector('td.score').innerHTML = s.stuScore;
+
+                        r.querySelector('.no').innerHTML = s.memId; //성능 상으로는 tag를 인식 안 하는 textContent가 좀 더 빠름,
+                        r.querySelector('.name').innerHTML = s.memName;
+                        r.querySelector('.score').innerHTML = s.memPoint;
+                        r.querySelector('.edit').setAttribute('data-no', s.memId);
+                        //elmArr.push(r);
+                        dfrag.append(r); //문서 조각에 담음,
+                        //tb.append(r);
+                    }
+
+                    //tb.append(...elmArr); //tb.append(elmArr[0], elmArr[1], elmArr[2]);
+                    tb.append(dfrag); //DocumentFragment의 내용을 tb의 내용에 추가
+
+                    //htmlStr += '<tr><td>' + studentList[0].stuNo + '</td><td>' + studentList[0].stuName + '</td><td>' + studentList[0].stuScore + '</td><td><button type="button">변경</button></td></tr>';
+                    //htmlStr += '<tr><td>' + studentList[1].stuNo + '</td><td>' + studentList[1].stuName + '</td><td>' + studentList[1].stuScore + '</td><td><button type="button">변경</button></td></tr>';
+                    //htmlStr += '<tr><td>' + studentList[2].stuNo + '</td><td>' + studentList[2].stuName + '</td><td>' + studentList[2].stuScore + '</td><td><button type="button">변경</button></td></tr>';
+            
+                    //tb.innerHTML = htmlStr; //tag가 들어가서, tag가 해석이 되야 하므로, textContent 대신 innerHTML 사용
+    				
+                    
+    				
+    			}).catch(function(error){
+    				console.log(error);
+    				alert('회원목록 조회 실패');
+    			});
+            	
+                
+
+            }
+            
+            
+            refreshList();
+            initForm();
+			 */
+            
+			
+            //2.저장버튼을 클릭하면 stuForm에 입력한 학생정보를 
+            //  studentList에 추가
+            delBtn.on('click', function() {
+                if (sf.hasClass('mod')){
+                	$.ajax('/myapp/api/member/del', {
+        				method: 'GET',
+        				data: { memId: noInp.val() },
+                		dataType: 'json'
+        			})
+        			.done(function(data){
+        				console.log(data);
+        	            refreshList(); 
+        	            initForm();
+        	            alert( data.num + '명의 회원 삭제 성공');
+        			}).fail(function(jqXHR,textStatus,error){
+        				console.log(error);
+        				alert('회원 삭제 실패');
+        			});
+                }
+			});
+            
+            /*
+            delBtn.onclick = function(ev) {
+                if (sf.classList.contains('mod')){
+                	
+                	//fetch('/myapp/api/member/del?memId='+noInp.value, {
+                	fetch('/myapp/api/member/del?'+new URLSearchParams({memId:noInp.value}).toString(), {
+        				method: 'GET',
+        				//body: new URLSearchParams({x: xInp.value, y: yInp.value})
+        				//body: new FormData(sf) //form element를 주면 된다 => let sf = document.querySelector('#stuForm'); 
+        			}).then(response=>response.json())
+        			.then(function(data){ //response.json()의 결과가 인자로 전달
+        				console.log(data);
+
+        				//추가를 하고, 성공을 해야 의미가 메서드 실행의 의미가 있다
+        	            refreshList(); 
+        	            initForm();
+        	            alert( data.num + '명의 회원 삭제 성공');
+        			}).catch(function(error){
+        				console.log(error);
+        				alert('회원 삭제 실패');
+        			});
+                }
+			}
+            */
+            
+            
+            /*
+            delBtn.on('click', function(ev) {
+                if (sf.hasClass('mod')){
+                	$.ajax({
+                		url: 'api/member/del',
+        				method: 'GET',
+        				data: sf.serialize()
+        				//data: 'x='+ xInp.val() +'&y='+ yInp.val() //요청메시지내용(요청파라미터) //POST면, body에 담아서 전송, GET이면 주소 뒤에 붙여서 전송,
+						//data: { x: xInp.val(), y: yInp.val() } //요청메시지내용(요청파라미터) //객체 형태로 전송, 특수문자가 있어도 자동으로 인코딩해준다,
+                	})
+					.done(function(data){ //response.json()의 결과가 인자로 전달
+        				console.log(data);
+        				//추가를 하고, 성공을 해야 의미가 메서드 실행의 의미가 있다
+        	            refreshList(); 
+        	            initForm();
+        	            alert( data.num + '명의 회원 삭제 성공');
+        			}).fail(function() {
+        				alert('회원 삭제 실패');
+        			});
+                }
+            });
+			*/
+            
+            
+            /*
+            delBtn.onclick = function(ev) {
+                if (sf.classList.contains('mod')){
+                	
+                	//fetch('/myapp/api/member/del?memId='+noInp.value, {
+                	fetch('/myapp/api/member/del?'+new URLSearchParams({memId:noInp.value}).toString(), {
+        				method: 'GET',
+        				//body: new URLSearchParams({x: xInp.value, y: yInp.value})
+        				//body: new FormData(sf) //form element를 주면 된다 => let sf = document.querySelector('#stuForm'); 
+        			}).then(response=>response.json())
+        			.then(function(data){ //response.json()의 결과가 인자로 전달
+        				console.log(data);
+
+        				//추가를 하고, 성공을 해야 의미가 메서드 실행의 의미가 있다
+        	            refreshList(); 
+        	            initForm();
+        	            alert( data.num + '명의 회원 삭제 성공');
+        			}).catch(function(error){
+        				console.log(error);
+        				alert('회원 삭제 실패');
+        			});
+                	
+                	
+                	for (let i = 0; i < studentList.length; i++) {
+                        const s = studentList[i];
+                        if (s.stuNo===noInp.value) {
+                            //studentList.remove(s); //remove 메서드는 없음, splice 사용,
+                            studentList.splice(i,1); //i번째 부터 1개 지움,
+                            refreshList();
+                            //noInp.readOnly = false;
+                            //sf.classList.remove('mod'); //modify
+                            initForm();
+                            break;
+                        }
+                    }
+                	
+                    
+                }
+            }
+            */
+
+            
+            function initForm() {
+                noInp.prop('readOnly', false).val('');
+                //sf.removeClass('mod'); //modify
+                //noInp.val('');
+                passInp.val('');
+                nameInp.val('');
+                scoreInp.val('');
+                //noInp.value = nameInp.value = scoreInp.value = '';
+                delBtn.prop('disabled', true);
+                sf.removeClass('mod active');
+                //sf.classList.remove('mod', 'active');
+            }
+            
+            saveBtn.on('click', function() {
+                let reqUrl = '/myapp/api/member/add'; //추가요청주소
+            	if (sf.hasClass('mod')){ //변경 모드인 경우
+            		reqUrl = '/myapp/api/member/edit'; //변경요청주소
+            	}
+                	$.ajax(reqUrl, {
+                		method: 'POST',
+                		data: sf.serialize(),
+                		dataType: 'json'
+                	})
+                	.done(function(data){
+						console.log(data);
+         				//추가를 하고, 성공을 해야 의미가 메서드 실행의 의미가 있다
+         	            refreshList(); //목록을 새로 받아서 출력, 
+         	            initForm(); //form을 초기화,
+         	            alert( data.num + '명의 회원 저장 성공');
+                	})
+                	.fail(function(jqXHR,textStatus,error){ //error객체가 3번째 인자이므로, 인자 3개를 다 찍어줘야 한다,
+         				console.log(error);
+         				alert('회원 저장 실패');
+         			});
+            });
+                	
+				/*
+	            saveBtn.on('click', function() {
+	                let reqUrl = 'api/member/add'; //추가요청주소
+	            	if (sf.hasClass('mod')){ //변경 모드인 경우
+	            		reqUrl = 'api/member/edit'; //변경요청주소
+	            	}
+                	$.ajax({
+                		url: reqUrl,
+                		method: 'POST',
+                		data: sf.serialize()
+                	})
+                	.done(function(){
+						console.log(data);
+         				//추가를 하고, 성공을 해야 의미가 메서드 실행의 의미가 있다
+         	            refreshList(); //목록을 새로 받아서 출력, 
+         	            initForm(); //form을 초기화,
+         	            alert( data.num + '명의 회원 저장 성공');
+                	})
+                	.fail(function(){
+                		alert('회원 저장 실패');
+                	});	
+                	*/
+                	
+                	
+                	/*
+                	 fetch(reqUrl, {
+         				method: 'POST',
+         				//body: new URLSearchParams({x: xInp.value, y: yInp.value})
+         				body: new FormData(sf) //form element를 주면 된다 => let sf = document.querySelector('#stuForm'); 
+         			}).then(response=>response.json())
+         			.then(function(data){ //response.json()의 결과가 인자로 전달
+         				console.log(data);
+         				
+         				//추가를 하고, 성공을 해야 의미가 메서드 실행의 의미가 있다
+         	            refreshList(); //목록을 새로 받아서 출력, 
+         	            initForm(); //form을 초기화,
+         	            alert( data.num + '명의 회원 저장 성공');
+         			}).catch(function(error){
+         				console.log(error);
+         				alert('회원 저장 실패');
+         			});
+                	*/
+                	
+                
+                	/* for (let i = 0; i < studentList.length; i++) {
+                        const s = studentList[i];
+                        if (s.stuNo===noInp.value) {
+                            s.stuName = nameInp.value;
+                            s.stuScore = scoreInp.value;
+                            //noInp.readOnly = false;
+                            //sf.classList.remove('mod'); //modify
+                            break;
+                        }
+                    } */
+                    
+                    
+                    
+                /* }else{ //추가
+                    //studentList.push({ stuNo: '20230001', stuName: '고길동', stuScore: 70 });
+                    //studentList.push({ stuNo: noInp.value, stuName: nameInp.value, stuScore: scoreInp.value });
+                	
+                    fetch('/myapp/api/member/add', {
+        				method: 'POST',
+        				//body: new URLSearchParams({x: xInp.value, y: yInp.value})
+        				body: new FormData(sf) //form element를 주면 된다 => let sf = document.querySelector('#stuForm'); 
+        			}).then(response=>response.json())
+        			.then(function(data){ //response.json()의 결과가 인자로 전달
+        				console.log(data);
+        				
+        				//추가를 하고, 성공을 해야 의미가 메서드 실행의 의미가 있다
+        	            refreshList(); 
+        	            initForm();
+        			}).catch(function(error){
+        				console.log(error);
+        				alert('회원 추가 실패');
+        			});
+                } */
+                
+                
+                //noInp.value = '';
+                //nameInp.value = '';
+                //scoreInp.value = '';
+                //noInp.value = nameInp.value = scoreInp.value = '';
+            //});
+				
+				
+            $('#stuTable').on('click', '.edit', function(ev) {
+                    let no = $( ev.target ).data('no'); //.attr('data-no'); //data 메서드를 써서 만들었으므로, 가져올 때도 data 메서드로 꺼내와야 한다,
+                    $.ajax('/myapp/api/member/edit', {
+                    	method: 'GET',
+                    	data: {memId:no}, //memId=no로 알아서 encoding 해줌
+                    	dataType: 'json'
+                    })
+                    .done(function(data){ //response.json()의 결과가 인자로 전달
+        				console.log(data);
+        				noInp.val(data.memId).prop('readOnly', true);
+                        nameInp.val(data.memName);
+                        scoreInp.val(data.memPoint);
+                        //noInp.prop('readOnly', true); //pk값은 수정 불가
+                        //sf.addClass('mod'); //modify, 저장 버튼 눌렀을 때, insert가 아닌 update하기 위해서,
+                        delBtn.prop('disabled', false); //삭제 버튼 활성화
+                        sf.addClass('mod active'); //form을 화면에 보이게 함(모달창))
+                    })
+                    .fail(function(jqXHR,textStatus,error){
+        				console.log(error);
+        				alert('회원 상세정보 조회 실패');
+        			});
+            });
+
+			/*
+            //document.querySelectorAll('#stuTable button')
+            $('#stuTable').on('click', '.edit', function(ev) {
+                //ev.target //event가 직접 발생한 대상
+                //ev.currentTarget //함수를 붙여놓은 그 대상 === this
+                //if (ev.target.tagName=='BUTTON') {
+                //if (ev.target.classList.contains('edit')) {
+                //if (ev.target.matches('button.edit')) {
+                //if (ev.target.matches('.edit')) { //지정한 CSS선택자와 일치하는지 여부
+                    let no = $( ev.target ).data('no');
+                    //alert(no);
+                    
+                    $.ajax({
+                    	url: 'api/member/edit',
+                    	method: 'GET',
+                    	data: 'memId='+ no
+                    })
+                    .done(function(data){ //response.json()의 결과가 인자로 전달
+        				console.log(data);
+        			
+        				//const s = data;
+        				noInp.val(data.memId);
+                        nameInp.val(data.memName);
+                        scoreInp.val(data.memPoint);
+                        noInp.prop('readOnly', true); //pk값은 수정 불가
+                        sf.addClass('mod'); //modify, 저장 버튼 눌렀을 때, insert가 아닌 update하기 위해서,
+                        delBtn.prop('disabled', false); //삭제 버튼 활성화
+                        sf.addClass('active'); //form을 화면에 보이게 함(모달창))
+                    })
+                    .fail(function(){
+                    	alert('회원 상세정보 조회 실패');
+                    });
+					*/
+                 
+                    
+            		/*
+                    //fetch('/myapp/api/member/edit?memId='+no, {
+                    fetch('/myapp/api/member/edit?'+new URLSearchParams({memId:no}).toString(), {
+        				method: 'GET',
+        				//body: new URLSearchParams({x: xInp.value, y: yInp.value})
+        				//body: new FormData(sf) //form element를 주면 된다 => let sf = document.querySelector('#stuForm'); 
+        			}).then(response=>response.json())
+        			.then(function(data){ //response.json()의 결과가 인자로 전달
+        				console.log(data);
+        			
+        				//const s = data;
+        				noInp.value = data.memId;
+                        nameInp.value = data.memName;
+                        scoreInp.value = data.memPoint;
+                        noInp.readOnly = true; //pk값은 수정 불가
+                        sf.classList.add('mod'); //modify, 저장 버튼 눌렀을 때, insert가 아닌 update하기 위해서,
+                        delBtn.disabled = false; //삭제 버튼 활성화
+                        sf.classList.add('active'); //form을 화면에 보이게 함(모달창)
+                        //sf.classList.add('mod', 'active');
+                        
+        				
+        				//추가를 하고, 성공을 해야 의미가 메서드 실행의 의미가 있다
+        	            //refreshList(); 
+        	            //initForm();
+        			}).catch(function(error){
+        				console.log(error);
+        				alert('회원 상세정보 조회 실패');
+        			});
+                    */
+                    
+                    
+                    /* for (let i = 0; i < studentList.length; i++) {
+                        const s = studentList[i];
+                        if (s.stuNo===no) {
+                            
+                            break;
+                        }
+                    } */
+                //}
+            //});
+
+            $('#cancel').on('click', function() {
+                initForm();
+            });
+
+            $('#add').on('click', function() {
+                sf.addClass('active');
+            });
+
+      }); // DOM tree 구조를 완성했을 때, 비로소 실행이 된다,
+  
+        //3.변경버튼을 클릭하면, 클릭한 학생 정보를 stuForm에 출력
+        //  3-1. stuForm의 학생정보를 변경하고 저장버튼을 클릭하면,
+        //      studentList에서 해당 학생정보를 변경
+        //  3-2. 삭제버튼을 클릭하면, 현재 학생정보를 studentList에서 삭제
+        //* studentList 데이터는 항상 최신 상태를 stuTable에 출력
+
+    </script>
+</head>
+<body>
+    <button type="button" id="add">회원추가</button>
+    <table id="stuTable">
+        <thead><tr><th>아이디</th><th>이름</th><th>포인트</th><th>처리</th></tr></thead>
+        <tbody>
+            <!-- <tr><td>20230001</td><td>고길동</td><td>70</td><td><button type="button">변경</button></td></tr>
+            <tr><td>20230002</td><td>마이콜</td><td>30</td><td><button type="button">변경</button></td></tr>
+            <tr><td>20230003</td><td>도우너</td><td>50</td><td><button type="button">변경</button></td></tr> -->
+        </tbody>
+    </table>
+    <form id="stuForm" action="">
+        <div>아이디 : <input type="text" name="memId" ></div>
+        <div class="mod-hide">비밀번호 : <input type="password" name="memPass" ></div>
+        <div>이름 : <input type="text" name="memName" ></div>
+        <div>포인트 : <input type="number" name="memPoint" ></div>
+        <input type="button" value="저장" id="save" >
+        <input type="button" value="삭제" id="del" >
+        <input type="button" value="취소" id="cancel" >
+    </form>
+    <template id="row">
+        <tr><td class="no"></td><td class="name"></td><td class="score"></td><td><button type="button" class="edit">변경</button></td></tr>
+    </template>
+</body>
+</html>

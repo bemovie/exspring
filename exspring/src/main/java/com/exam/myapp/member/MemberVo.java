@@ -12,7 +12,7 @@ import javax.validation.constraints.Size;
 //@Future, @FutureOrPresent, @Past, @PastOrPresent
 
 public class MemberVo {
-	@NotNull @Size(min = 3, max = 50) @Email 
+	@NotNull @Size(min = 3, max = 50) //@Email 
 	private String memId;
 	@NotNull @Size(min = 4, max = 50)
 	private String memPass;

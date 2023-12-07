@@ -2,6 +2,7 @@ package com.exam.myapp;
 
 import java.text.DateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
  * Handles requests for the application home page.
@@ -91,6 +93,17 @@ public class HomeController {
 		
 		
 		return "test"; //뷰를 반환 (스프링에서는 /WEB-INF/views/test.jsp에서 앞뒤 생략)
+	}
+	
+	@RequestMapping("/cal") @ResponseBody
+	public Map<String, Object> name(double x, double y) {
+		System.out.println("ajax 테스트!!");
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("sum", x+y);
+		map.put("mul", x*y);
+		//return "Hello Ajax, 한글";
+		//return x+y;
+		return map;
 	}
 	
 }
